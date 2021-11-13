@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Xml.Serialization;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Newtonsoft.Json;
 
 namespace Nop.Web.Framework.Models
 {
@@ -47,15 +48,16 @@ namespace Nop.Web.Framework.Models
 
         ////MVC is suppressing further validation if the IFormCollection is passed to a controller method. That's why we add it to the model
         //[XmlIgnore]
+        //[JsonIgnore]
         //public IFormCollection Form { get; set; }
 
         /// <summary>
         /// Gets or sets property to store any custom values for models 
         /// </summary>
         [XmlIgnore]
+        [JsonIgnore]
         public Dictionary<string, object> CustomProperties { get; set; }
 
         #endregion
-
     }
 }

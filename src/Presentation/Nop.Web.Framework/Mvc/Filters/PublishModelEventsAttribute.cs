@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Dynamic;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
@@ -72,8 +71,8 @@ namespace Nop.Web.Framework.Mvc.Filters
             /// <summary>
             /// Whether to ignore this filter
             /// </summary>
-            /// <param name="context">A context for filters</param>
-            /// <returns></returns>
+            /// <param name="context">A context for action filters</param>
+            /// <returns>Result</returns>
             protected virtual bool IgnoreFilter(FilterContext context)
             {
                 //check whether this filter has been overridden for the Action
@@ -86,16 +85,21 @@ namespace Nop.Web.Framework.Mvc.Filters
                 return actionFilter?.IgnoreFilter ?? _ignoreFilter;
             }
 
+            /// <summary>
+            /// Publish model prepared event
+            /// </summary>
+            /// <param name="model">Model</param>
+            /// <returns>A task that represents the asynchronous operation</returns>
             protected virtual async Task PublishModelPreparedEventAsync(object model)
             {
                 //we publish the ModelPrepared event for all models as the BaseNopModel, 
                 //so you need to implement IConsumer<ModelPrepared<BaseNopModel>> interface to handle this event
-                if (model is BaseNopModel nopModel) 
+                if (model is BaseNopModel nopModel)
                     await _eventPublisher.ModelPreparedAsync(nopModel);
 
                 //we publish the ModelPrepared event for collection as the IEnumerable<BaseNopModel>, 
                 //so you need to implement IConsumer<ModelPrepared<IEnumerable<BaseNopModel>>> interface to handle this event
-                if (model is IEnumerable<BaseNopModel> nopModelCollection) 
+                if (model is IEnumerable<BaseNopModel> nopModelCollection)
                     await _eventPublisher.ModelPreparedAsync(nopModelCollection);
             }
 
@@ -108,11 +112,11 @@ namespace Nop.Web.Framework.Mvc.Filters
             {
                 if (context == null)
                     throw new ArgumentNullException(nameof(context));
-                
+
                 //only in POST requests
                 if (!context.HttpContext.Request.Method.Equals(WebRequestMethods.Http.Post, StringComparison.InvariantCultureIgnoreCase))
                     return;
-                
+
                 if (IgnoreFilter(context))
                     return;
 
@@ -139,16 +143,8 @@ namespace Nop.Web.Framework.Mvc.Filters
                     return;
 
                 //model prepared event
-                if (context.Controller is Controller controller) 
+                if (context.Controller is Controller controller)
                     await PublishModelPreparedEventAsync(controller.ViewData.Model);
-            }
-
-            protected virtual bool IsPropertyExist(dynamic model, string propertyName)
-            {
-                if (model is ExpandoObject)
-                    return ((IDictionary<string, object>)model).ContainsKey(propertyName);
-
-                return model.GetType().GetProperty(propertyName) != null;
             }
 
             #endregion
@@ -183,16 +179,7 @@ namespace Nop.Web.Framework.Mvc.Filters
 
                 //model prepared event
                 if (context.Result is JsonResult result)
-                {
-                    dynamic value = result.Value;
-
-                    if (!IsPropertyExist(value, "Model"))
-                        return;
-
-                    var model = (object)value.Model;
-
-                    await PublishModelPreparedEventAsync(model);
-                }
+                    await PublishModelPreparedEventAsync(result.Value);
 
                 await next();
             }
